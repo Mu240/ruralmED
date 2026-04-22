@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RuralMED AI — Offline Clinical Decision Support</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --green:      #1D9E75;
+    --green-dark: #0F6E56;
+    --green-light:#E1F5EE;
+    --red:        #E24B4A;
+    --red-light:  #FFF5F5;
+    --yellow:     #BA7517;
+    --yellow-light:#FFFBEB;
+    --bg:         #F4F6F4;
+    --surface:    #FFFFFF;
+    --border:     #E2E8E4;
+    --text:       #1A2E1A;
+    --text-muted: #6B7F6B;
+    --mono:       'IBM Plex Mono', monospace;
+    --sans:       'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--green);
+    color: white;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-weight: 500; font-size: 14px;
+  }
+  .header h1 { font-size: 16px; font-weight: 500; letter-spacing: .01em; }
+  .offline-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 12px; font-family: var(--mono);
+  }
+  .pulse {
+    width: 7px; height: 7px;
+    background: #7FE6C0; border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+  }
+
+  /* ── Layout ── */
+  .layout {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .card-body { padding: 20px; }
+
+  /* ── Form ── */
+  .lang-row {
+    display: flex; gap: 8px; margin-bottom: 18px;
+  }
+  .lang-btn {
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .lang-btn.active {
+    background: var(--green);
+    color: white;
+    border-color: var(--green);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    font-family: var(--mono);
+  }
+  input, select, textarea {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    width: 100%;
+    transition: border-color .15s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--green);
+    background: white;
+  }
+  textarea { resize: vertical; min-height: 90px; }
+
+  .vitals-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    grid-column: 1 / -1;
+  }
+
+  .submit-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 13px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .submit-btn:hover:not(:disabled) { background: var(--green-dark); }
+  .submit-btn:disabled {
+    background: #A0B8A8;
+    cursor: not-allowed;
+  }
+  .btn-spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Results panel ── */
+  .result-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    color: var(--text-muted);
+    gap: 12px;
+    text-align: center;
+  }
+  .placeholder-icon {
+    width: 48px; height: 48px;
+    background: var(--green-light);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .placeholder-text { font-size: 14px; line-height: 1.6; }
+
+  /* Triage banner */
+  .triage-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-weight: 500;
+    font-size: 15px;
+  }
+  .triage-red    { background: var(--red-light); color: var(--red);    border: 1px solid #FFCDD2; }
+  .triage-yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid #FFE082; }
+  .triage-green  { background: var(--green-light); color: var(--green-dark); border: 1px solid #A5D6A7; }
+  .triage-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%; flex-shrink: 0;
+  }
+  .dot-red    { background: var(--red); }
+  .dot-yellow { background: #F59E0B; }
+  .dot-green  { background: var(--green); }
+
+  /* Response text */
+  .response-text {
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+    font-family: var(--sans);
+  }
+  .response-text strong, .response-text b { font-weight: 600; }
+
+  /* Sources */
+  .sources-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .source-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--green);
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  /* Urdu support */
+  [dir="rtl"] { text-align: right; }
+  [dir="rtl"] .form-grid { direction: rtl; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo-mark">RM</div>
+    <h1>RuralMED AI</h1>
+  </div>
+  <div class="offline-pill">
+    <div class="pulse"></div>
+    Offline
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat">
+      <span class="stat-value" id="stat-total">0</span>
+      <span class="stat-label">Assessments</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" id="stat-red" style="color:#E24B4A">0</span>
+      <span class="stat-label">Urgent referrals</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value" id="stat-green">0</span>
+      <span class="stat-label">Treated at clinic</span>
+    </div>
+    <div class="stat" style="margin-left:auto">
+      <span class="stat-value" style="font-size:13px;color:var(--text-muted)">Gemma 4 E4B</span>
+      <span class="stat-label">Running locally via Ollama</span>
+    </div>
+  </div>
+
+  <!-- Input form -->
+  <div class="card">
+    <div class="card-header">Patient Assessment</div>
+    <div class="card-body">
+
+      <div class="lang-row">
+        <button class="lang-btn active" onclick="setLang('en', this)">English</button>
+        <button class="lang-btn" onclick="setLang('ur', this)">اردو</button>
+        <button class="lang-btn" onclick="setLang('ar', this)">العربية</button>
+      </div>
+
+      <div class="form-grid" id="form-grid">
+        <div class="form-group">
+          <label id="lbl-age">Patient Age</label>
+          <input id="age" placeholder="e.g. 5 years, 32 years">
+        </div>
+        <div class="form-group">
+          <label id="lbl-gender">Gender</label>
+          <select id="gender">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Child (under 5)">Child (under 5)</option>
+            <option value="Infant (under 1)">Infant (under 1)</option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <label id="lbl-symptoms">Symptoms &amp; Chief Complaint</label>
+          <textarea id="symptoms"
+            placeholder="Describe all symptoms in detail. e.g. fever for 3 days, headache, loss of appetite, no vomiting..."></textarea>
+        </div>
+
+        <div class="vitals-row">
+          <div class="form-group">
+            <label id="lbl-temp">Temp (°C)</label>
+            <input id="temperature" placeholder="38.5">
+          </div>
+          <div class="form-group">
+            <label id="lbl-hr">Heart Rate</label>
+            <input id="heart_rate" placeholder="98 bpm">
+          </div>
+          <div class="form-group">
+            <label id="lbl-rr">Resp Rate</label>
+            <input id="resp_rate" placeholder="24/min">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label id="lbl-duration">Duration</label>
+          <input id="duration" placeholder="3 days">
+        </div>
+        <div class="form-group">
+          <label id="lbl-extra">Additional Notes</label>
+          <input id="additional_info" placeholder="Medications, history...">
+        </div>
+      </div>
+
+      <button class="submit-btn" id="submit-btn" onclick="assess()">
+        <div class="btn-spinner" id="btn-spinner"></div>
+        <span id="btn-text">Get Clinical Assessment</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Results panel -->
+  <div class="card" id="result-card">
+    <div class="card-header">Clinical Decision</div>
+    <div class="card-body">
+      <div class="result-placeholder" id="placeholder">
+        <div class="placeholder-icon">+</div>
+        <div class="placeholder-text">
+          Fill in patient details and click<br>
+          <strong>Get Clinical Assessment</strong>
+        </div>
+      </div>
+      <div id="result-content" style="display:none">
+        <div class="triage-banner" id="triage-banner">
+          <div class="triage-dot" id="triage-dot"></div>
+          <span id="triage-text"></span>
+        </div>
+        <div class="response-text" id="response-text"></div>
+        <div class="sources-row" id="sources-row"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const LABELS = {
+  en: {
+    age:"Patient Age", gender:"Gender", symptoms:"Symptoms & Chief Complaint",
+    temp:"Temp (°C)", hr:"Heart Rate", rr:"Resp Rate",
+    duration:"Duration", extra:"Additional Notes",
+    btn:"Get Clinical Assessment", loading:"Analyzing...",
+    placeholder:"Fill in patient details and click"
+  },
+  ur: {
+    age:"مریض کی عمر", gender:"جنس", symptoms:"علامات اور شکایت",
+    temp:"درجہ حرارت", hr:"دل کی دھڑکن", rr:"سانس کی رفتار",
+    duration:"مدت", extra:"اضافی نوٹس",
+    btn:"طبی تشخیص حاصل کریں", loading:"تجزیہ ہو رہا ہے...",
+    placeholder:"مریض کی تفصیل بھریں"
+  },
+  ar: {
+    age:"عمر المريض", gender:"الجنس", symptoms:"الأعراض",
+    temp:"الحرارة", hr:"معدل النبض", rr:"معدل التنفس",
+    duration:"المدة", extra:"ملاحظات إضافية",
+    btn:"الحصول على التقييم السريري", loading:"جاري التحليل...",
+    placeholder:"أدخل بيانات المريض"
+  }
+};
+
+function setLang(lang, btn) {
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const L = LABELS[lang];
+  document.getElementById('lbl-age').textContent      = L.age;
+  document.getElementById('lbl-gender').textContent   = L.gender;
+  document.getElementById('lbl-symptoms').textContent = L.symptoms;
+  document.getElementById('lbl-temp').textContent     = L.temp;
+  document.getElementById('lbl-hr').textContent       = L.hr;
+  document.getElementById('lbl-rr').textContent       = L.rr;
+  document.getElementById('lbl-duration').textContent = L.duration;
+  document.getElementById('lbl-extra').textContent    = L.extra;
+  document.getElementById('btn-text').textContent     = L.btn;
+  const dir = lang === 'ur' || lang === 'ar' ? 'rtl' : 'ltr';
+  document.getElementById('form-grid').dir = dir;
+}
+
+async function assess() {
+  const symptoms = document.getElementById('symptoms').value.trim();
+  if (!symptoms) {
+    document.getElementById('symptoms').focus();
+    return;
+  }
+
+  const btn     = document.getElementById('submit-btn');
+  const spinner = document.getElementById('btn-spinner');
+  const btnText = document.getElementById('btn-text');
+
+  btn.disabled          = true;
+  spinner.style.display = 'block';
+  btnText.textContent   = 'Analyzing...';
+
+  const data = {
+    age:             document.getElementById('age').value,
+    gender:          document.getElementById('gender').value,
+    symptoms:        symptoms,
+    temperature:     document.getElementById('temperature').value,
+    heart_rate:      document.getElementById('heart_rate').value,
+    resp_rate:       document.getElementById('resp_rate').value,
+    duration:        document.getElementById('duration').value,
+    additional_info: document.getElementById('additional_info').value,
+  };
+
+  try {
+    const resp = await fetch('/api/assess', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    const result = await resp.json();
+
+    if (!result.success) throw new Error(result.error);
+
+    showResult(result);
+    loadStats();
+  } catch (err) {
+    alert('Error: ' + err.message +
+          '\n\nMake sure Ollama is running: open a terminal and run "ollama serve"');
+  } finally {
+    btn.disabled          = false;
+    spinner.style.display = 'none';
+    btnText.textContent   = 'Get Clinical Assessment';
+  }
+}
+
+function showResult(result) {
+  document.getElementById('placeholder').style.display    = 'none';
+  document.getElementById('result-content').style.display = 'block';
+
+  const banner = document.getElementById('triage-banner');
+  const dot    = document.getElementById('triage-dot');
+  const text   = document.getElementById('triage-text');
+
+  banner.className = `triage-banner triage-${result.triage}`;
+  dot.className    = `triage-dot dot-${result.triage}`;
+  const labels = {
+    red:    'URGENT — Refer to Hospital Immediately',
+    yellow: 'MONITOR CLOSELY — Reassess in 24-48 hours',
+    green:  'STABLE — Can be managed at clinic'
+  };
+  text.textContent = labels[result.triage] || 'Assessment complete';
+
+  document.getElementById('response-text').textContent = result.response;
+
+  const sourcesRow = document.getElementById('sources-row');
+  sourcesRow.innerHTML = result.sources.map(s =>
+    `<span class="source-tag">${s.replace(/_/g,' ')}</span>`
+  ).join('');
+}
+
+async function loadStats() {
+  try {
+    const resp = await fetch('/api/stats');
+    const data = await resp.json();
+    document.getElementById('stat-total').textContent =
+      data.total_assessments;
+    document.getElementById('stat-red').textContent =
+      data.triage_distribution.red || 0;
+    document.getElementById('stat-green').textContent =
+      data.triage_distribution.green || 0;
+  } catch {}
+}
+
+loadStats();
+</script>
+</body>
+</html>
