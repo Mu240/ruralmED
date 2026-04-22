@@ -75,7 +75,7 @@ ollama serve
 
 ### 2. Clone and install
 ```bash
-git clone https://github.com/YOURNAME/ruralmED.git
+git clone https://github.com/Mu240/ruralmED.git
 cd ruralmED
 python -m venv ruralmED-env
 
@@ -148,7 +148,7 @@ Built from WHO IMAI Primary Care Guidelines and MSF Essential Medicine protocols
 ruralmED/
 ├── data/
 │   ├── download_datasets.py    # Download MedQA training data
-│   └── prepare_data.py         # Format for Gemma 4 instruction tuning
+│   
 ├── training/
 │   ├── finetune.py             # Unsloth LoRA fine-tuning
 │   ├── evaluate.py             # Benchmark base vs fine-tuned
@@ -204,8 +204,8 @@ Apache 2.0 — free to use, modify, and deploy in any clinical or research setti
 ```bibtex
 @misc{ruralmED2026,
   title  = {RuralMED AI: Offline Clinical Decision Support for Rural Health Workers},
-  author = {YOUR NAME},
+  author = {Muhammad Hassan Ali},
   year   = {2026},
-  url    = {https://github.com/YOURNAME/ruralmED}
+  url    = {https://github.com/Mu240/ruralmED.git}
 }
 ```
